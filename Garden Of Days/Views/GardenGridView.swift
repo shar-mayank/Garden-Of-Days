@@ -151,10 +151,10 @@ struct GrowthFlowerView: View {
                     .rotationEffect(.degrees(randomRotation + rotation))
                     .offset(randomOffset)
             } else {
-                // Faint placeholder dot
+                // Placeholder dot for empty days
                 Circle()
-                    .fill(color.opacity(0.1))
-                    .frame(width: 4, height: 4)
+                    .fill(color.opacity(0.35))
+                    .frame(width: 6, height: 6)
             }
         }
         .frame(width: 28, height: 28)
