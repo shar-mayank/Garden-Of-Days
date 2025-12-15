@@ -77,8 +77,28 @@ struct VoidDotView: View {
     private let dotSize: CGFloat = 8
     private let filledDotSize: CGFloat = 10
 
+    /// Dot color based on day status
+    private var dotColor: Color {
+        if isToday {
+            return .white
+        } else if day.isPast {
+            return .white  // Past days are white
+        } else {
+            return Color.white.opacity(0.25)  // Future days are dim
+        }
+    }
+
     var body: some View {
         ZStack {
+            // Glow effect for today
+            if isToday {
+                Circle()
+                    .fill(Color.white.opacity(0.3))
+                    .frame(width: dotSize + 12, height: dotSize + 12)
+                    .blur(radius: 6)
+                    .scaleEffect(isAnimating ? 1.3 : 1.0)
+            }
+
             if day.hasMemory {
                 // Filled dot (has memory)
                 Circle()
@@ -86,17 +106,17 @@ struct VoidDotView: View {
                     .frame(width: filledDotSize, height: filledDotSize)
                     .scaleEffect(isAnimating ? 1.1 : 1.0)
             } else {
-                // Empty dot
+                // Empty dot - white for past, dim for future
                 Circle()
-                    .fill(Color.white.opacity(isToday ? 0.8 : 0.3))
+                    .fill(dotColor)
                     .frame(width: dotSize, height: dotSize)
             }
 
             // Today indicator ring
             if isToday {
                 Circle()
-                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                    .frame(width: dotSize + 6, height: dotSize + 6)
+                    .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
+                    .frame(width: dotSize + 8, height: dotSize + 8)
                     .scaleEffect(isAnimating ? 1.2 : 1.0)
             }
         }

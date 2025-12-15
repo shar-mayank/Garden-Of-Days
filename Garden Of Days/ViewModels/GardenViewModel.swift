@@ -25,6 +25,10 @@ struct GardenDay: Identifiable {
         memory != nil
     }
 
+    var isPast: Bool {
+        Calendar.current.startOfDay(for: date) < Calendar.current.startOfDay(for: Date())
+    }
+
     var displayDate: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, dd.MM"

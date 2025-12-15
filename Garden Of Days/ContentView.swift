@@ -76,7 +76,7 @@ struct ContentView: View {
                 viewModel.selectToday()
             } label: {
                 HStack(spacing: 8) {
-                    Text("📄")
+                    Text("📝")
                         .font(.system(size: 14))
 
                     Text("today's memory")
