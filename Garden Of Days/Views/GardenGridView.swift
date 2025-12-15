@@ -170,25 +170,11 @@ struct GrowthFlowerView: View {
 
     @ViewBuilder
     private func flowerDoodle(assetName: String) -> some View {
-        if doodleManager.isImageAsset(assetName) {
-            // Image asset from Assets.xcassets (your SVG/PDF files)
-            Image(assetName)
-                .renderingMode(.template)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 24, height: 24)
-        } else if let pattern = FloralPattern(rawValue: assetName) {
-            // Custom floral pattern (SwiftUI shapes)
-            FloralDoodleView(pattern: pattern, size: 24, color: color)
-        } else if let sfSymbol = doodleManager.getSFSymbol(assetName) {
-            // SF Symbol
-            Image(systemName: sfSymbol)
-                .font(.system(size: 18, weight: .light))
-        } else {
-            // Fallback
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 18, weight: .light))
-        }
+        // Use your PDF floral images from Assets.xcassets
+        Image(assetName)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 24, height: 24)
     }
 }
 

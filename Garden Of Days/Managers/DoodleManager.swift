@@ -13,92 +13,36 @@ final class DoodleManager {
     static let shared = DoodleManager()
 
     // MARK: - Image Assets from Assets.xcassets
-    // Add your SVG/PDF floral images to Assets.xcassets with these names:
-    // floral_1, floral_2, floral_3, ... floral_30
-    // Then they will be used automatically!
+    // Your 9 floral SVG images
     private let imageAssets: [String] = [
         "floral_1", "floral_2", "floral_3", "floral_4", "floral_5",
-        "floral_6", "floral_7", "floral_8", "floral_9", "floral_10",
-        "floral_11", "floral_12", "floral_13", "floral_14", "floral_15",
-        "floral_16", "floral_17", "floral_18", "floral_19", "floral_20",
-        "floral_21", "floral_22", "floral_23", "floral_24", "floral_25",
-        "floral_26", "floral_27", "floral_28", "floral_29", "floral_30"
+        "floral_6", "floral_7", "floral_8", "floral_9"
     ]
-
-    // SF Symbols as fallback (used if image assets don't exist)
-    private let sfSymbolAssets: [String] = [
-        "leaf.fill",
-        "leaf",
-        "leaf.circle",
-        "leaf.arrow.circlepath",
-        "camera.macro",
-        "camera.macro.circle",
-        "tree",
-        "tree.fill",
-        "tree.circle",
-        "tree.circle.fill",
-        "laurel.leading",
-        "laurel.trailing",
-        "atom",
-        "sparkle",
-        "sparkles",
-        "staroflife",
-        "staroflife.fill",
-        "staroflife.circle",
-        "asterisk",
-        "asterisk.circle",
-        "sun.max",
-        "sun.max.fill",
-        "sun.min",
-        "sun.haze",
-        "sun.dust",
-        "moon.stars",
-        "moon.stars.fill",
-        "star",
-        "star.fill",
-        "star.circle"
-    ]
-
-    // Custom drawn floral shapes (will be rendered as SwiftUI paths)
-    private let floralPatterns: [FloralPattern] = FloralPattern.allCases
 
     private init() {}
 
-    /// Returns a random doodle asset name
+    /// Returns a random doodle asset name (only uses your SVG images)
     func getRandomDoodle() -> String {
-        // Check which image assets actually exist
-        let availableImages = imageAssets.filter { UIImage(named: $0) != nil }
-
-        // Combine all available options
-        var allOptions: [String] = []
-        allOptions.append(contentsOf: availableImages)
-        allOptions.append(contentsOf: sfSymbolAssets)
-        allOptions.append(contentsOf: floralPatterns.map { $0.rawValue })
-
-        return allOptions.randomElement() ?? "leaf.fill"
+        return imageAssets.randomElement() ?? "floral_1"
     }
 
     /// Returns all available doodle options
     func getAllDoodles() -> [String] {
-        let availableImages = imageAssets.filter { UIImage(named: $0) != nil }
-        return availableImages + sfSymbolAssets + floralPatterns.map { $0.rawValue }
+        return imageAssets
     }
 
-    /// Check if the doodle is a custom floral pattern (SwiftUI shape)
+    /// Check if the doodle is a custom floral pattern (SwiftUI shape) - disabled
     func isCustomFloral(_ name: String) -> Bool {
-        return FloralPattern(rawValue: name) != nil
+        return false
     }
 
     /// Check if the doodle is an image asset from Assets.xcassets
     func isImageAsset(_ name: String) -> Bool {
-        return imageAssets.contains(name) && UIImage(named: name) != nil
+        return imageAssets.contains(name)
     }
 
-    /// Get SF Symbol name or nil if not an SF Symbol
+    /// Get SF Symbol name - disabled, we only use SVG images now
     func getSFSymbol(_ name: String) -> String? {
-        if sfSymbolAssets.contains(name) {
-            return name
-        }
         return nil
     }
 }

@@ -103,7 +103,6 @@ final class GardenViewModel {
     // MARK: - Data Loading
 
     func loadGardenDays() {
-        let calendar = Calendar.current
         let year = currentYear
         var days: [GardenDay] = []
 
