@@ -64,11 +64,11 @@ struct EntryView: View {
             HStack(spacing: 8) {
                 Image(systemName: day.hasMemory ? "leaf.fill" : "leaf")
                     .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "000080"))
+                    .foregroundColor(Color(hex: "f670b2"))
 
                 Text(day.displayDate)
                     .font(.system(.body, design: .monospaced))
-                    .foregroundColor(Color(hex: "000080"))
+                    .foregroundColor(Color(hex: "f670b2"))
             }
 
             Spacer()
@@ -85,12 +85,12 @@ struct EntryView: View {
             } label: {
                 Text("done")
                     .font(.system(.body, design: .monospaced))
-                    .foregroundColor(Color(hex: "000080"))
+                    .foregroundColor(Color(hex: "f670b2"))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     .background(
                         Capsule()
-                            .stroke(Color(hex: "000080"), lineWidth: 1)
+                            .stroke(Color(hex: "f670b2"), lineWidth: 1)
                     )
             }
         }
@@ -115,7 +115,7 @@ struct EntryView: View {
             // Text Editor
             TextEditor(text: $memoryText)
                 .font(.system(.body, design: .monospaced))
-                .foregroundColor(Color(hex: "000080"))
+                .foregroundColor(Color(hex: "f670b2"))
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
                 .padding(.horizontal, 20)

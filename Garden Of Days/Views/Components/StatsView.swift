@@ -22,7 +22,7 @@ struct StatsView: View {
                 HStack {
                     Text("your garden")
                         .font(.system(.title2, design: .monospaced))
-                        .foregroundColor(Color(hex: "000080"))
+                        .foregroundColor(Color(hex: "f670b2"))
 
                     Spacer()
 
@@ -31,7 +31,7 @@ struct StatsView: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(hex: "000080"))
+                            .foregroundColor(Color(hex: "f670b2"))
                     }
                 }
                 .padding(.horizontal, 24)
@@ -73,7 +73,7 @@ struct StatsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("growth progress")
                         .font(.system(.caption, design: .monospaced))
-                        .foregroundColor(Color(hex: "000080").opacity(0.7))
+                        .foregroundColor(Color(hex: "f670b2").opacity(0.7))
 
                     GeometryReader { geometry in
                         ZStack(alignment: .leading) {
@@ -83,7 +83,7 @@ struct StatsView: View {
 
                             // Progress
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(hex: "000080"))
+                                .fill(Color(hex: "f670b2"))
                                 .frame(width: geometry.size.width * CGFloat(completionPercentage / 100))
                         }
                     }
@@ -97,11 +97,11 @@ struct StatsView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "sparkles")
                         .font(.system(size: 24))
-                        .foregroundColor(Color(hex: "000080").opacity(0.5))
+                        .foregroundColor(Color(hex: "f670b2").opacity(0.5))
 
                     Text("every day is a seed")
                         .font(.system(.caption, design: .monospaced))
-                        .foregroundColor(Color(hex: "000080").opacity(0.5))
+                        .foregroundColor(Color(hex: "f670b2").opacity(0.5))
                 }
                 .padding(.bottom, 40)
             }
@@ -126,22 +126,22 @@ struct StatCard: View {
             HStack {
                 Image(systemName: icon)
                     .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "000080").opacity(0.7))
+                    .foregroundColor(Color(hex: "f670b2").opacity(0.7))
 
                 Text(title)
                     .font(.system(.caption, design: .monospaced))
-                    .foregroundColor(Color(hex: "000080").opacity(0.7))
+                    .foregroundColor(Color(hex: "f670b2").opacity(0.7))
             }
 
             Text(value)
                 .font(.system(.title, design: .monospaced))
                 .fontWeight(.semibold)
-                .foregroundColor(Color(hex: "000080"))
+                .foregroundColor(Color(hex: "f670b2"))
 
             if let subtitle = subtitle {
                 Text(subtitle)
                     .font(.system(.caption2, design: .monospaced))
-                    .foregroundColor(Color(hex: "000080").opacity(0.5))
+                    .foregroundColor(Color(hex: "f670b2").opacity(0.5))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

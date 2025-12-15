@@ -80,6 +80,6 @@ struct SVGImageView: UIViewRepresentable {
 }
 
 #Preview {
-    SVGImageView(svgName: "floral_1", tintColor: Color(hex: "000080"))
+    SVGImageView(svgName: "floral_1", tintColor: Color(hex: "f670b2"))
         .frame(width: 50, height: 50)
 }

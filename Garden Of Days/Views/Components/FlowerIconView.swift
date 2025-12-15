@@ -134,15 +134,15 @@ struct BranchView: View {
 
 #Preview {
     VStack(spacing: 40) {
-        FlowerIconView(color: Color(hex: "000080"), size: 60, isAnimated: true)
+        FlowerIconView(color: Color(hex: "f670b2"), size: 60, isAnimated: true)
 
         FlowerIconView(color: .black, size: 40)
 
         LeafShape()
-            .stroke(Color(hex: "000080"), lineWidth: 1.5)
+            .stroke(Color(hex: "f670b2"), lineWidth: 1.5)
             .frame(width: 30, height: 50)
 
-        BranchView(color: Color(hex: "000080"), length: 80)
+        BranchView(color: Color(hex: "f670b2"), length: 80)
     }
     .padding()
 }

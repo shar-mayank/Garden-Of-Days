@@ -86,11 +86,11 @@ final class GardenViewModel {
     }
 
     var primaryColor: Color {
-        viewMode == .void ? Color.white : Color(hex: "000080")
+        viewMode == .void ? Color.white : Color(hex: "f670b2")
     }
 
     var secondaryColor: Color {
-        viewMode == .void ? Color.white.opacity(0.6) : Color(hex: "000080").opacity(0.6)
+        viewMode == .void ? Color.white.opacity(0.6) : Color(hex: "f670b2").opacity(0.6)
     }
 
     // MARK: - Initialization
