@@ -46,7 +46,12 @@ struct GardenDay: Identifiable {
 final class GardenViewModel {
     // MARK: - Properties
 
-    var viewMode: ViewMode = .void
+    var viewMode: ViewMode {
+        didSet {
+            // Persist view mode to UserDefaults
+            UserDefaults.standard.set(viewMode.rawValue, forKey: "savedViewMode")
+        }
+    }
     var isDragRevealMode: Bool = false  // When true, dragging reveals flowers instead of opening journal
     var gardenDays: [GardenDay] = []
     var selectedDay: GardenDay?
@@ -147,6 +152,17 @@ final class GardenViewModel {
     }
 
     // MARK: - Initialization
+
+    init() {
+        // Load saved view mode or default to growth (light mode) for first-time users
+        if let savedMode = UserDefaults.standard.string(forKey: "savedViewMode"),
+           let mode = ViewMode(rawValue: savedMode) {
+            self.viewMode = mode
+        } else {
+            // First time opening app - default to light mode (growth)
+            self.viewMode = .growth
+        }
+    }
 
     func configure(with modelContext: ModelContext) {
         self.modelContext = modelContext
