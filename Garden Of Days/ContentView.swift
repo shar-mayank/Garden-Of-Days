@@ -106,7 +106,7 @@ struct ContentView: View {
         VStack(spacing: 8) {
             // Magic hint message (shows once on first open)
             if showMagicHint {
-                Text("Hi Gardener! Hold for 1 sec and drag over dots for magic!")
+                Text("Double-tap 🌿 to reveal magic!")
                     .font(.system(.caption, design: .monospaced))
                     .foregroundColor(viewModel.primaryColor.opacity(0.8))
                     .padding(.horizontal, 12)
@@ -136,11 +136,14 @@ struct ContentView: View {
                 }
                 .pickerStyle(.wheel)
                 .frame(width: 80, height: 50)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(viewModel.primaryColor.opacity(0.15))
-                )
                 .clipped()
+                .overlay(alignment: .bottom) {
+                    // Subtle underline instead of rectangle
+                    Rectangle()
+                        .fill(viewModel.primaryColor.opacity(0.3))
+                        .frame(height: 1)
+                        .offset(y: -8)
+                }
             }
             .onTapGesture {
                 showStats = true
@@ -169,7 +172,7 @@ struct ContentView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.top, 50)
+        .padding(.top, 35)
         .padding(.bottom, 8)
         .onAppear {
             // Show hint on first app open
@@ -205,7 +208,9 @@ struct ContentView: View {
     private var modeToggleBar: some View {
         HStack(spacing: 0) {
             // Growth mode button (flowers)
-            Image(systemName: "leaf.fill")
+            // Single tap: switch to growth mode
+            // Double tap (when in growth mode): toggle drag reveal mode
+            Image(systemName: viewModel.isDragRevealMode ? "hand.draw.fill" : "leaf.fill")
                 .font(.system(size: 16))
                 .foregroundColor(
                     viewModel.viewMode == .growth
@@ -215,11 +220,21 @@ struct ContentView: View {
                 .frame(width: 50, height: 36)
                 .background(
                     viewModel.viewMode == .growth
-                        ? viewModel.primaryColor
+                        ? (viewModel.isDragRevealMode ? viewModel.primaryColor.opacity(0.7) : viewModel.primaryColor)
                         : Color.white.opacity(0.001) // Invisible but tappable
                 )
                 .contentShape(Rectangle())
-                .onTapGesture {
+                .onTapGesture(count: 2) {
+                    // Double tap toggles drag reveal mode (only when already in growth mode)
+                    if viewModel.viewMode == .growth {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            viewModel.isDragRevealMode.toggle()
+                        }
+                    }
+                }
+                .onTapGesture(count: 1) {
+                    // Single tap switches to growth mode (and exits drag reveal if active)
+                    viewModel.isDragRevealMode = false
                     viewModel.setViewMode(.growth)
                 }
 

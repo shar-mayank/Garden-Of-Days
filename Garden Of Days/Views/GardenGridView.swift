@@ -18,7 +18,6 @@ struct GardenGridView: View {
 
     // Slide reveal feature
     @State private var revealedDayIds: Set<Int> = []
-    @State private var isInRevealMode: Bool = false
     @State private var revealResetTimer: Timer?
 
     var body: some View {
@@ -99,7 +98,8 @@ struct GardenGridView: View {
                     }
                 )
                 .onTapGesture {
-                    if !isInRevealMode {
+                    // Only open journal if NOT in drag reveal mode
+                    if !viewModel.isDragRevealMode {
                         viewModel.selectDay(day)
                     }
                 }
@@ -111,19 +111,21 @@ struct GardenGridView: View {
             dayFrames = frames
         }
         .overlay(
-            // Invisible overlay for long press + drag gesture (doesn't block scroll)
-            RevealGestureView(
-                isInRevealMode: $isInRevealMode,
-                onDragLocation: { location in
-                    handleRevealDrag(at: location)
-                },
-                onGestureEnded: {
-                    if !revealedDayIds.isEmpty {
-                        startRevealResetTimer()
-                    }
-                    isInRevealMode = false
+            // Drag gesture overlay - only active in drag reveal mode
+            Group {
+                if viewModel.isDragRevealMode {
+                    DragRevealOverlay(
+                        onDragLocation: { location in
+                            handleRevealDrag(at: location)
+                        },
+                        onDragEnded: {
+                            if !revealedDayIds.isEmpty {
+                                startRevealResetTimer()
+                            }
+                        }
+                    )
                 }
-            )
+            }
         )
         .transition(.opacity)
     }
@@ -154,21 +156,18 @@ struct GardenGridView: View {
     }
 }
 
-// MARK: - Reveal Gesture View (Long Press + Drag)
+// MARK: - Drag Reveal Overlay (Simple drag to reveal flowers)
 
-struct RevealGestureView: UIViewRepresentable {
-    @Binding var isInRevealMode: Bool
+struct DragRevealOverlay: UIViewRepresentable {
     let onDragLocation: (CGPoint) -> Void
-    let onGestureEnded: () -> Void
+    let onDragEnded: () -> Void
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
         view.backgroundColor = .clear
 
-        let longPress = UILongPressGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleLongPress(_:)))
-        longPress.minimumPressDuration = 1.0
-        longPress.delegate = context.coordinator
-        view.addGestureRecognizer(longPress)
+        let pan = UIPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
+        view.addGestureRecognizer(pan)
 
         return view
     }
@@ -179,40 +178,24 @@ struct RevealGestureView: UIViewRepresentable {
         Coordinator(self)
     }
 
-    class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        let parent: RevealGestureView
+    class Coordinator: NSObject {
+        let parent: DragRevealOverlay
 
-        init(_ parent: RevealGestureView) {
+        init(_ parent: DragRevealOverlay) {
             self.parent = parent
         }
 
-        @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+        @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
             let location = gesture.location(in: gesture.view)
 
             switch gesture.state {
-            case .began:
-                parent.isInRevealMode = true
+            case .began, .changed:
                 parent.onDragLocation(location)
-            case .changed:
-                if parent.isInRevealMode {
-                    parent.onDragLocation(location)
-                }
             case .ended, .cancelled, .failed:
-                parent.onGestureEnded()
+                parent.onDragEnded()
             default:
                 break
             }
-        }
-
-        // Allow scroll gesture to work simultaneously
-        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-            // Don't interfere with scroll - only recognize our gesture after long press duration
-            return false
-        }
-
-        // Let scroll gestures pass through
-        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-            return false
         }
     }
 }

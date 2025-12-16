@@ -47,6 +47,7 @@ final class GardenViewModel {
     // MARK: - Properties
 
     var viewMode: ViewMode = .void
+    var isDragRevealMode: Bool = false  // When true, dragging reveals flowers instead of opening journal
     var gardenDays: [GardenDay] = []
     var selectedDay: GardenDay?
     var showEntrySheet: Bool = false
