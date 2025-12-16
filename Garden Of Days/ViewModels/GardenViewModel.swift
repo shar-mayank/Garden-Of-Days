@@ -52,6 +52,15 @@ final class GardenViewModel {
     var showEntrySheet: Bool = false
     var showToast: Bool = false
     var toastMessage: String = ""
+    var showYearPicker: Bool = false
+
+    // Selected year (defaults to current year)
+    var selectedYear: Int = Calendar.current.component(.year, from: Date())
+
+    // Year range: 2004-2069
+    static let minYear = 2004
+    static let maxYear = 2069
+    static var yearRange: [Int] { Array(minYear...maxYear) }
 
     private var modelContext: ModelContext?
     private let doodleManager = DoodleManager.shared
@@ -62,12 +71,51 @@ final class GardenViewModel {
         Calendar.current.component(.year, from: Date())
     }
 
+    var isCurrentYear: Bool {
+        selectedYear == currentYear
+    }
+
+    /// Check if a year is a leap year
+    static func isLeapYear(_ year: Int) -> Bool {
+        (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+    }
+
+    /// Get number of days in a specific year (handles leap years)
+    static func daysInYear(_ year: Int) -> Int {
+        isLeapYear(year) ? 366 : 365
+    }
+
+    /// Cumulative days left until end of selected year
+    /// - Current year: days remaining in current year
+    /// - Past year: 0
+    /// - Future year: days left in current year + all days in years between + days in selected year
     var daysLeftInYear: Int {
-        Date.daysLeftInYear
+        if selectedYear < currentYear {
+            return 0 // Past year - no days left
+        } else if selectedYear == currentYear {
+            return Date.daysLeftInYear
+        } else {
+            // Future year - cumulative calculation
+            var total = Date.daysLeftInYear // Remaining days in current year
+
+            // Add full years between current year and selected year
+            for year in (currentYear + 1)..<selectedYear {
+                total += GardenViewModel.daysInYear(year)
+            }
+
+            // Add all days of the selected year
+            total += GardenViewModel.daysInYear(selectedYear)
+
+            return total
+        }
+    }
+
+    var daysInSelectedYear: Int {
+        GardenViewModel.daysInYear(selectedYear)
     }
 
     var totalDaysInYear: Int {
-        Date.daysInCurrentYear
+        daysInSelectedYear
     }
 
     var memoriesCount: Int {
@@ -107,11 +155,15 @@ final class GardenViewModel {
     // MARK: - Data Loading
 
     func loadGardenDays() {
-        let year = currentYear
+        loadGardenDays(for: selectedYear)
+    }
+
+    func loadGardenDays(for year: Int) {
         var days: [GardenDay] = []
 
         // Generate all days of the year
-        for dayOfYear in 1...totalDaysInYear {
+        let daysInYear = daysInSelectedYear
+        for dayOfYear in 1...daysInYear {
             if let date = Date.dateForDayOfYear(dayOfYear, year: year) {
                 let gardenDay = GardenDay(
                     id: dayOfYear,
@@ -124,14 +176,34 @@ final class GardenViewModel {
 
         self.gardenDays = days
 
-        // Load existing memories
-        loadMemories()
+        // Load existing memories for this year
+        loadMemories(for: year)
     }
 
-    private func loadMemories() {
+    private func loadMemories(for year: Int) {
         guard let context = modelContext else { return }
 
-        let descriptor = FetchDescriptor<MemoryEntry>()
+        // Get date range for the selected year
+        let calendar = Calendar.current
+        var startComponents = DateComponents()
+        startComponents.year = year
+        startComponents.month = 1
+        startComponents.day = 1
+
+        var endComponents = DateComponents()
+        endComponents.year = year
+        endComponents.month = 12
+        endComponents.day = 31
+
+        guard let startDate = calendar.date(from: startComponents),
+              let endDate = calendar.date(from: endComponents) else { return }
+
+        // Fetch memories for this year only
+        let descriptor = FetchDescriptor<MemoryEntry>(
+            predicate: #Predicate<MemoryEntry> { memory in
+                memory.date >= startDate && memory.date <= endDate
+            }
+        )
 
         do {
             let memories = try context.fetch(descriptor)
@@ -148,31 +220,28 @@ final class GardenViewModel {
         }
     }
 
+    private func loadMemories() {
+        loadMemories(for: selectedYear)
+    }
+
     /// Reload memories from persistent storage (call on orientation change, app resume, etc.)
     func reloadMemories() {
-        guard let context = modelContext else { return }
+        guard modelContext != nil else { return }
 
         // Clear existing memory references first
         for index in gardenDays.indices {
             gardenDays[index].memory = nil
         }
 
-        // Reload from database
-        let descriptor = FetchDescriptor<MemoryEntry>()
+        // Reload from database for current selected year
+        loadMemories(for: selectedYear)
+    }
 
-        do {
-            let memories = try context.fetch(descriptor)
-
-            // Map memories to garden days
-            for memory in memories {
-                let dayOfYear = memory.dayOfYear
-                if let index = gardenDays.firstIndex(where: { $0.id == dayOfYear }) {
-                    gardenDays[index].memory = memory
-                }
-            }
-        } catch {
-            print("Error reloading memories: \(error)")
-        }
+    /// Change to a different year
+    func changeYear(to year: Int) {
+        guard year >= GardenViewModel.minYear && year <= GardenViewModel.maxYear else { return }
+        selectedYear = year
+        loadGardenDays(for: year)
     }
 
     // MARK: - Actions

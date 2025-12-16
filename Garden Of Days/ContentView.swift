@@ -25,13 +25,13 @@ struct ContentView: View {
 
                 // Main content with header and grid
                 VStack(spacing: 0) {
-                    // Header - fixed height (increased for logo)
+                    // Header - fixed height for inline year picker
                     headerView
-                        .frame(height: 190)
+                        .frame(height: 140)
 
                     // Grid - takes remaining space
                     GardenGridView(viewModel: viewModel)
-                        .frame(height: geometry.size.height - 190 - 80) // Fixed height: total - header - footer
+                        .frame(height: geometry.size.height - 140 - 80) // Fixed height: total - header - footer
                         .clipped()
                 }
 
@@ -101,48 +101,56 @@ struct ContentView: View {
     // MARK: - Header View
 
     private var headerView: some View {
-        VStack(spacing: 12) {
-            // App Logo
-            Image("AppLogo")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 50, height: 50)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-
-            // Countdown text - tap for stats
-            Button {
-                showStats = true
-            } label: {
-                Text("\(viewModel.daysLeftInYear) days left in \(String(viewModel.currentYear))")
-                    .font(.system(.title3, design: .monospaced))
-                    .fontWeight(.medium)
+        VStack(spacing: 8) {
+            // Days left with inline year picker
+            HStack(spacing: 0) {
+                Text("\(viewModel.daysLeftInYear) days left in ")
+                    .font(.system(.body, design: .monospaced))
                     .foregroundColor(viewModel.primaryColor)
-            }
-            .buttonStyle(.plain)
 
-            // Today's memory button
-            Button {
-                viewModel.selectToday()
-            } label: {
-                HStack(spacing: 8) {
-                    Text("📝")
-                        .font(.system(size: 14))
-
-                    Text("today's memory")
-                        .font(.system(.body, design: .monospaced))
+                // Compact inline year wheel picker
+                Picker("Year", selection: Binding(
+                    get: { viewModel.selectedYear },
+                    set: { viewModel.changeYear(to: $0) }
+                )) {
+                    ForEach(GardenViewModel.yearRange, id: \.self) { year in
+                        Text(String(year))
+                            .tag(year)
+                    }
                 }
-                .foregroundColor(viewModel.primaryColor)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(
-                    Capsule()
-                        .stroke(viewModel.primaryColor.opacity(0.5), lineWidth: 1)
-                )
+                .pickerStyle(.wheel)
+                .frame(width: 80, height: 50)
+                .clipped()
             }
-            .buttonStyle(.plain)
+            .onTapGesture {
+                showStats = true
+            }
+
+            // Today's memory button (only show for current year)
+            if viewModel.isCurrentYear {
+                Button {
+                    viewModel.selectToday()
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("📝")
+                            .font(.system(size: 12))
+
+                        Text("today's memory")
+                            .font(.system(.footnote, design: .monospaced))
+                    }
+                    .foregroundColor(viewModel.primaryColor)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .stroke(viewModel.primaryColor.opacity(0.5), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(.top, 50)
-        .padding(.bottom, 16)
+        .padding(.bottom, 8)
     }
 
     // MARK: - Footer View
