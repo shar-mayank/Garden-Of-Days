@@ -210,28 +210,49 @@ final class GardenViewModel {
     func saveMemory(content: String, for day: GardenDay) {
         guard let context = modelContext else { return }
 
-        // Check if memory already exists for this day
-        if let existingMemory = day.memory {
-            // Update existing
-            existingMemory.content = content
-            existingMemory.updatedAt = Date()
-        } else {
-            // Create new memory with random doodle
-            let doodleName = doodleManager.getRandomDoodle()
-            let newMemory = MemoryEntry(
-                date: day.date,
-                content: content,
-                doodleAssetName: doodleName
-            )
-            context.insert(newMemory)
+        // First check if memory already exists in the database for this day
+        let dayOfYear = day.id
+        let year = currentYear
 
-            // Update garden day
-            if let index = gardenDays.firstIndex(where: { $0.id == day.id }) {
-                gardenDays[index].memory = newMemory
+        // Find the exact date for this day of year
+        guard let targetDate = Date.dateForDayOfYear(dayOfYear, year: year) else { return }
+        let startOfDay = Calendar.current.startOfDay(for: targetDate)
+
+        // Fetch existing memory from database
+        let descriptor = FetchDescriptor<MemoryEntry>(
+            predicate: #Predicate<MemoryEntry> { memory in
+                memory.date == startOfDay
             }
-        }
+        )
 
         do {
+            let existingMemories = try context.fetch(descriptor)
+
+            if let existingMemory = existingMemories.first {
+                // Update existing memory - keep the same doodle!
+                existingMemory.content = content
+                existingMemory.updatedAt = Date()
+
+                // Update garden day reference
+                if let index = gardenDays.firstIndex(where: { $0.id == day.id }) {
+                    gardenDays[index].memory = existingMemory
+                }
+            } else {
+                // Create new memory with random doodle (only for truly new entries)
+                let doodleName = doodleManager.getRandomDoodle()
+                let newMemory = MemoryEntry(
+                    date: startOfDay,
+                    content: content,
+                    doodleAssetName: doodleName
+                )
+                context.insert(newMemory)
+
+                // Update garden day
+                if let index = gardenDays.firstIndex(where: { $0.id == day.id }) {
+                    gardenDays[index].memory = newMemory
+                }
+            }
+
             try context.save()
         } catch {
             print("Error saving memory: \(error)")

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct GardenGridView: View {
     @Bindable var viewModel: GardenViewModel
@@ -313,29 +314,51 @@ struct ToastView: View {
 // MARK: - Preview
 
 #Preview("Void Mode") {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: MemoryEntry.self, configurations: config)
+
     let viewModel = GardenViewModel()
     viewModel.viewMode = .void
-    viewModel.loadGardenDays()
+    viewModel.configure(with: container.mainContext)
 
     return GardenGridView(viewModel: viewModel)
         .background(Color.black)
+        .modelContainer(container)
 }
 
 #Preview("Growth Mode") {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: MemoryEntry.self, configurations: config)
+
     let viewModel = GardenViewModel()
     viewModel.viewMode = .growth
-    viewModel.loadGardenDays()
+    viewModel.configure(with: container.mainContext)
+
+    // Add some sample memories for preview
+    let doodleManager = DoodleManager.shared
+    for day in [1, 5, 10, 15, 20, 50, 100, 150, 200, 250, 300, 350] {
+        if let date = Date.dateForDayOfYear(day, year: Calendar.current.component(.year, from: Date())) {
+            let memory = MemoryEntry(date: date, content: "Sample memory", doodleAssetName: doodleManager.getRandomDoodle())
+            container.mainContext.insert(memory)
+        }
+    }
+    try? container.mainContext.save()
+    viewModel.reloadMemories()
 
     return GardenGridView(viewModel: viewModel)
         .background(Color(hex: "E5E5EA"))
+        .modelContainer(container)
 }
 
-#Preview("iPad Growth Mode") {
+#Preview("iPad Growth Mode", traits: .landscapeLeft) {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: MemoryEntry.self, configurations: config)
+
     let viewModel = GardenViewModel()
     viewModel.viewMode = .growth
-    viewModel.loadGardenDays()
+    viewModel.configure(with: container.mainContext)
 
     return GardenGridView(viewModel: viewModel)
         .background(Color(hex: "E5E5EA"))
-        .previewDevice(PreviewDevice(rawValue: "iPad Pro (12.9-inch)"))
+        .modelContainer(container)
 }

@@ -49,7 +49,10 @@ struct ContentView: View {
         .onChange(of: scenePhase) { oldPhase, newPhase in
             // Reload data when app becomes active (handles rotation, background/foreground)
             if newPhase == .active {
-                viewModel.reloadMemories()
+                // Small delay to ensure context is ready
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    viewModel.reloadMemories()
+                }
             }
         }
         .sheet(isPresented: $viewModel.showEntrySheet) {
