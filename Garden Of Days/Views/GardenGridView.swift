@@ -12,11 +12,17 @@ struct GardenGridView: View {
     @Bindable var viewModel: GardenViewModel
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
+    // Cache the screen width to prevent recalculation on state changes
+    @State private var cachedScreenWidth: CGFloat = UIScreen.main.bounds.width
+    @State private var cachedIsLandscape: Bool = UIScreen.main.bounds.width > UIScreen.main.bounds.height
+
     var body: some View {
         GeometryReader { geometry in
-            let screenWidth = geometry.size.width
-            let isLandscape = geometry.size.width > geometry.size.height
-            let gridConfig = GridConfig(screenWidth: screenWidth, isLandscape: isLandscape, sizeClass: horizontalSizeClass)
+            let gridConfig = GridConfig(
+                screenWidth: cachedScreenWidth,
+                isLandscape: cachedIsLandscape,
+                sizeClass: horizontalSizeClass
+            )
 
             ScrollView {
                 if viewModel.viewMode == .void {
@@ -30,6 +36,18 @@ struct GardenGridView: View {
                 }
             }
             .scrollIndicators(.hidden)
+            .onAppear {
+                // Cache initial size
+                cachedScreenWidth = geometry.size.width
+                cachedIsLandscape = geometry.size.width > geometry.size.height
+            }
+            .onChange(of: geometry.size) { oldSize, newSize in
+                // Only update cache on actual size changes (rotation), not layout recalcs
+                if abs(newSize.width - cachedScreenWidth) > 50 {
+                    cachedScreenWidth = newSize.width
+                    cachedIsLandscape = newSize.width > newSize.height
+                }
+            }
         }
     }
 
@@ -56,7 +74,8 @@ struct GardenGridView: View {
     // MARK: - Growth Mode (Light, Organic Flowers)
 
     private func growthModeGrid(config: GridConfig) -> some View {
-        let columns = Array(repeating: GridItem(.fixed(config.cellSize), spacing: 0), count: config.growthColumns)
+        // Use flexible columns that fill the width evenly
+        let columns = Array(repeating: GridItem(.flexible(minimum: config.cellSize, maximum: config.cellSize), spacing: 0), count: config.growthColumns)
 
         return LazyVGrid(columns: columns, spacing: 0) {
             ForEach(viewModel.gardenDays) { day in
@@ -70,6 +89,7 @@ struct GardenGridView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity) // Ensure grid fills available width
         .transition(.opacity)
     }
 }
@@ -95,27 +115,28 @@ struct GridConfig {
     }
 
     // Growth mode (pink side)
+    // Calculate cell size to fill screen width exactly
+    var growthColumns: Int {
+        if isIPad {
+            return isLandscape ? 26 : 18
+        } else {
+            return isLandscape ? 24 : 15
+        }
+    }
+
     var cellSize: CGFloat {
-        let base: CGFloat = 18
-        return base * scaleFactor
+        // Calculate cell size based on screen width and columns
+        let availableWidth = screenWidth - (horizontalPadding * 2)
+        return availableWidth / CGFloat(growthColumns)
     }
 
     var flowerSize: CGFloat {
-        let base: CGFloat = 45
-        return base * scaleFactor
+        // Flowers are larger than cells for overlap effect
+        return cellSize * 1.5
     }
 
     var dotSize: CGFloat {
-        let base: CGFloat = 4
-        return base * scaleFactor
-    }
-
-    var growthColumns: Int {
-        if isIPad {
-            return isLandscape ? 28 : 20
-        } else {
-            return isLandscape ? 28 : 18
-        }
+        return cellSize * 0.20
     }
 
     // Void mode (dark side)

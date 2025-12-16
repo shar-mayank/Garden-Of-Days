@@ -16,31 +16,56 @@ struct ContentView: View {
     @State private var hasConfigured: Bool = false
 
     var body: some View {
-        ZStack {
-            // Background
-            viewModel.backgroundColor
-                .ignoresSafeArea()
-                .animation(.easeInOut(duration: 0.3), value: viewModel.viewMode)
+        GeometryReader { geometry in
+            ZStack {
+                // Background
+                viewModel.backgroundColor
+                    .ignoresSafeArea()
+                    .animation(.easeInOut(duration: 0.3), value: viewModel.viewMode)
 
-            VStack(spacing: 0) {
-                // Header
-                headerView
+                // Main content with header and grid
+                VStack(spacing: 0) {
+                    // Header - fixed height
+                    headerView
+                        .frame(height: 140)
 
-                // Grid
-                GardenGridView(viewModel: viewModel)
+                    // Grid - takes remaining space
+                    GardenGridView(viewModel: viewModel)
+                        .frame(height: geometry.size.height - 140 - 80) // Fixed height: total - header - footer
+                        .clipped()
+                }
 
-                // Footer
-                footerView
+                // Fixed footer at bottom - uses overlay positioning
+                VStack {
+                    Spacer()
+
+                    ZStack(alignment: .bottom) {
+                        // Gradient fade background
+                        LinearGradient(
+                            colors: [
+                                viewModel.backgroundColor.opacity(0),
+                                viewModel.backgroundColor.opacity(0.9),
+                                viewModel.backgroundColor
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 100)
+                        .allowsHitTesting(false)
+
+                        footerView
+                    }
+                }
+                .ignoresSafeArea(.keyboard, edges: .bottom)
             }
-
-            // Toast overlay
-            VStack {
-                Spacer()
+            // Toast as overlay - doesn't affect layout
+            .overlay(alignment: .bottom) {
                 ToastView(
                     message: viewModel.toastMessage,
                     isVisible: viewModel.showToast
                 )
                 .padding(.bottom, 120)
+                .allowsHitTesting(false)
             }
         }
         .onAppear {
@@ -128,24 +153,23 @@ struct ContentView: View {
     private var modeToggleBar: some View {
         HStack(spacing: 0) {
             // Growth mode button (flowers)
-            Button {
-                viewModel.setViewMode(.growth)
-            } label: {
-                Image(systemName: "leaf.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(
-                        viewModel.viewMode == .growth
-                            ? viewModel.backgroundColor
-                            : viewModel.primaryColor.opacity(0.5)
-                    )
-                    .frame(width: 50, height: 36)
-                    .background(
-                        viewModel.viewMode == .growth
-                            ? viewModel.primaryColor
-                            : Color.clear
-                    )
-            }
-            .buttonStyle(.plain)
+            Image(systemName: "leaf.fill")
+                .font(.system(size: 16))
+                .foregroundColor(
+                    viewModel.viewMode == .growth
+                        ? viewModel.backgroundColor
+                        : viewModel.primaryColor.opacity(0.5)
+                )
+                .frame(width: 50, height: 36)
+                .background(
+                    viewModel.viewMode == .growth
+                        ? viewModel.primaryColor
+                        : Color.white.opacity(0.001) // Invisible but tappable
+                )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    viewModel.setViewMode(.growth)
+                }
 
             // Divider
             Rectangle()
@@ -153,30 +177,30 @@ struct ContentView: View {
                 .frame(width: 1, height: 20)
 
             // Void mode button (grid)
-            Button {
-                viewModel.setViewMode(.void)
-            } label: {
-                Image(systemName: "circle.grid.3x3.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(
-                        viewModel.viewMode == .void
-                            ? viewModel.backgroundColor
-                            : viewModel.primaryColor.opacity(0.5)
-                    )
-                    .frame(width: 50, height: 36)
-                    .background(
-                        viewModel.viewMode == .void
-                            ? viewModel.primaryColor
-                            : Color.clear
-                    )
-            }
-            .buttonStyle(.plain)
+            Image(systemName: "circle.grid.3x3.fill")
+                .font(.system(size: 16))
+                .foregroundColor(
+                    viewModel.viewMode == .void
+                        ? viewModel.backgroundColor
+                        : viewModel.primaryColor.opacity(0.5)
+                )
+                .frame(width: 50, height: 36)
+                .background(
+                    viewModel.viewMode == .void
+                        ? viewModel.primaryColor
+                        : Color.white.opacity(0.001) // Invisible but tappable
+                )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    viewModel.setViewMode(.void)
+                }
         }
         .background(
             Capsule()
                 .stroke(viewModel.primaryColor.opacity(0.3), lineWidth: 1)
         )
         .clipShape(Capsule())
+        .contentShape(Capsule()) // Entire capsule is tappable
     }
 }
 
