@@ -31,7 +31,7 @@ struct GardenDay: Identifiable {
 
     var displayDate: String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE, dd.MM"
+        formatter.dateFormat = "EEEE, dd.MM.yyyy"
         return formatter.string(from: date).lowercased()
     }
 

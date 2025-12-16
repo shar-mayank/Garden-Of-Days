@@ -46,17 +46,11 @@ struct SplashView: View {
                         .opacity(flowerOpacity)
 
                         // App name
-                        VStack(spacing: 8) {
-                            Text("garden of days")
-                                .font(.system(.title, design: .monospaced))
-                                .fontWeight(.light)
-                                .foregroundColor(.white)
-
-                            Text("\(Date().year)")
-                                .font(.system(.caption, design: .monospaced))
-                                .foregroundColor(.white.opacity(0.6))
-                        }
-                        .opacity(textOpacity)
+                        Text("Garden Of Days")
+                            .font(.system(.title, design: .monospaced))
+                            .fontWeight(.light)
+                            .foregroundColor(.white)
+                            .opacity(textOpacity)
                     }
                 }
                 .onAppear {

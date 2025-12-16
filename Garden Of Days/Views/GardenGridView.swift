@@ -132,7 +132,7 @@ struct GridConfig {
 
     var flowerSize: CGFloat {
         // Flowers are larger than cells for overlap effect
-        return cellSize * 1.5
+        return cellSize * 1.65
     }
 
     var dotSize: CGFloat {
