@@ -13,8 +13,13 @@ struct GardenGridView: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
     // Cache the screen width to prevent recalculation on state changes
-    @State private var cachedScreenWidth: CGFloat = UIScreen.main.bounds.width
-    @State private var cachedIsLandscape: Bool = UIScreen.main.bounds.width > UIScreen.main.bounds.height
+    @State private var cachedScreenWidth: CGFloat = 390 // Default, updated on appear
+    @State private var cachedIsLandscape: Bool = false
+
+    // Slide reveal feature
+    @State private var revealedDayIds: Set<Int> = []
+    @State private var isInRevealMode: Bool = false
+    @State private var revealResetTimer: Timer?
 
     var body: some View {
         GeometryReader { geometry in
@@ -82,15 +87,142 @@ struct GardenGridView: View {
                 GrowthFlowerView(
                     day: day,
                     color: viewModel.primaryColor,
-                    config: config
+                    config: config,
+                    isTemporarilyRevealed: revealedDayIds.contains(day.id)
+                )
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.preference(
+                            key: DayFramePreferenceKey.self,
+                            value: [day.id: geo.frame(in: .named("growthGrid"))]
+                        )
+                    }
                 )
                 .onTapGesture {
-                    viewModel.selectDay(day)
+                    if !isInRevealMode {
+                        viewModel.selectDay(day)
+                    }
                 }
             }
         }
-        .frame(maxWidth: .infinity) // Ensure grid fills available width
+        .frame(maxWidth: .infinity)
+        .coordinateSpace(name: "growthGrid")
+        .onPreferenceChange(DayFramePreferenceKey.self) { frames in
+            dayFrames = frames
+        }
+        .overlay(
+            // Invisible overlay for long press + drag gesture (doesn't block scroll)
+            RevealGestureView(
+                isInRevealMode: $isInRevealMode,
+                onDragLocation: { location in
+                    handleRevealDrag(at: location)
+                },
+                onGestureEnded: {
+                    if !revealedDayIds.isEmpty {
+                        startRevealResetTimer()
+                    }
+                    isInRevealMode = false
+                }
+            )
+        )
         .transition(.opacity)
+    }
+
+    // Store frames for hit testing during reveal
+    @State private var dayFrames: [Int: CGRect] = [:]
+
+    private func handleRevealDrag(at location: CGPoint) {
+        for (dayId, frame) in dayFrames {
+            if frame.contains(location) && !revealedDayIds.contains(dayId) {
+                _ = withAnimation(.spring(duration: 0.3)) {
+                    revealedDayIds.insert(dayId)
+                }
+                break
+            }
+        }
+    }
+
+    private func startRevealResetTimer() {
+        revealResetTimer?.invalidate()
+        revealResetTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { _ in
+            DispatchQueue.main.async {
+                withAnimation(.easeOut(duration: 0.5)) {
+                    revealedDayIds.removeAll()
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Reveal Gesture View (Long Press + Drag)
+
+struct RevealGestureView: UIViewRepresentable {
+    @Binding var isInRevealMode: Bool
+    let onDragLocation: (CGPoint) -> Void
+    let onGestureEnded: () -> Void
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+
+        let longPress = UILongPressGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleLongPress(_:)))
+        longPress.minimumPressDuration = 1.0
+        longPress.delegate = context.coordinator
+        view.addGestureRecognizer(longPress)
+
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        let parent: RevealGestureView
+
+        init(_ parent: RevealGestureView) {
+            self.parent = parent
+        }
+
+        @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+            let location = gesture.location(in: gesture.view)
+
+            switch gesture.state {
+            case .began:
+                parent.isInRevealMode = true
+                parent.onDragLocation(location)
+            case .changed:
+                if parent.isInRevealMode {
+                    parent.onDragLocation(location)
+                }
+            case .ended, .cancelled, .failed:
+                parent.onGestureEnded()
+            default:
+                break
+            }
+        }
+
+        // Allow scroll gesture to work simultaneously
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+            // Don't interfere with scroll - only recognize our gesture after long press duration
+            return false
+        }
+
+        // Let scroll gestures pass through
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+            return false
+        }
+    }
+}
+
+// MARK: - Day Frame Preference Key
+
+struct DayFramePreferenceKey: PreferenceKey {
+    static var defaultValue: [Int: CGRect] = [:]
+    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
+        value.merge(nextValue()) { _, new in new }
     }
 }
 
@@ -239,14 +371,22 @@ struct GrowthFlowerView: View {
     let day: GardenDay
     let color: Color
     let config: GridConfig
+    var isTemporarilyRevealed: Bool = false
 
     @State private var scale: CGFloat = 0.8
+    @State private var revealScale: CGFloat = 0.0
 
     private let doodleManager = DoodleManager.shared
 
     private var flowerSize: CGFloat { config.flowerSize }
     private var cellSize: CGFloat { config.cellSize }
     private var dotSize: CGFloat { config.dotSize }
+
+    // Consistent random doodle for this day
+    private var temporaryDoodleName: String {
+        let doodles = ["floral_1", "floral_2", "floral_3", "floral_4", "floral_5", "floral_6", "floral_7", "floral_8", "floral_9"]
+        return doodles[day.id % doodles.count]
+    }
 
     // Small random offset for organic feel (scaled)
     private var randomOffset: CGSize {
@@ -269,33 +409,56 @@ struct GrowthFlowerView: View {
         return CGFloat(base + variation)
     }
 
+    private var shouldShowFlower: Bool {
+        day.hasMemory || isTemporarilyRevealed
+    }
+
+    private var flowerAssetName: String {
+        if let memory = day.memory {
+            return memory.doodleAssetName
+        }
+        return temporaryDoodleName
+    }
+
     var body: some View {
         ZStack {
             // Invisible tap target - always tappable
             Color.clear
                 .frame(width: cellSize, height: cellSize)
 
-            if day.hasMemory, let memory = day.memory {
-                // Show flower doodle - visual only, taps pass through
-                flowerDoodle(assetName: memory.doodleAssetName)
+            if shouldShowFlower {
+                // Show flower doodle
+                flowerDoodle(assetName: flowerAssetName)
                     .frame(width: flowerSize, height: flowerSize)
-                    .scaleEffect(randomScale * scale)
+                    .scaleEffect(randomScale * (day.hasMemory ? scale : revealScale))
                     .rotationEffect(.degrees(randomRotation))
                     .offset(randomOffset)
-                    .allowsHitTesting(false)  // Taps pass through to the cell below
+                    .opacity(day.hasMemory ? 1.0 : 0.7)
+                    .allowsHitTesting(false)
             } else {
-                // Placeholder dot for empty days (increased opacity to 0.45)
+                // Placeholder dot for empty days
                 Circle()
                     .fill(color.opacity(0.45))
                     .frame(width: dotSize, height: dotSize)
             }
         }
         .frame(width: cellSize, height: cellSize)
-        .contentShape(Rectangle())  // Tap area is exactly the cell
+        .contentShape(Rectangle())
         .onAppear {
             if day.hasMemory {
                 withAnimation(.easeOut(duration: 0.5).delay(Double(day.id) * 0.002)) {
                     scale = 1.0
+                }
+            }
+        }
+        .onChange(of: isTemporarilyRevealed) { _, newValue in
+            if newValue {
+                withAnimation(.spring(duration: 0.3)) {
+                    revealScale = 1.0
+                }
+            } else {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    revealScale = 0.0
                 }
             }
         }

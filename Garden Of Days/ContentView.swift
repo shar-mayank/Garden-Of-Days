@@ -14,6 +14,8 @@ struct ContentView: View {
     @State private var viewModel = GardenViewModel()
     @State private var showStats: Bool = false
     @State private var hasConfigured: Bool = false
+    @State private var showMagicHint: Bool = false
+    @AppStorage("hasSeenMagicHint") private var hasSeenMagicHint: Bool = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -102,6 +104,20 @@ struct ContentView: View {
 
     private var headerView: some View {
         VStack(spacing: 8) {
+            // Magic hint message (shows once on first open)
+            if showMagicHint {
+                Text("Hi Gardener! Hold for 1 sec and drag over dots for magic!")
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundColor(viewModel.primaryColor.opacity(0.8))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(viewModel.primaryColor.opacity(0.1))
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
             // Days left with inline year picker
             HStack(spacing: 0) {
                 Text("\(viewModel.daysLeftInYear) days left in ")
@@ -120,6 +136,10 @@ struct ContentView: View {
                 }
                 .pickerStyle(.wheel)
                 .frame(width: 80, height: 50)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(viewModel.primaryColor.opacity(0.15))
+                )
                 .clipped()
             }
             .onTapGesture {
@@ -151,6 +171,23 @@ struct ContentView: View {
         }
         .padding(.top, 50)
         .padding(.bottom, 8)
+        .onAppear {
+            // Show hint on first app open
+            if !hasSeenMagicHint {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showMagicHint = true
+                    }
+                }
+                // Hide after 7 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        showMagicHint = false
+                    }
+                    hasSeenMagicHint = true
+                }
+            }
+        }
     }
 
     // MARK: - Footer View
