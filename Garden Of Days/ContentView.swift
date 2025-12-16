@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @Binding var widgetDeepLink: URL?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel = GardenViewModel()
@@ -92,6 +93,23 @@ struct ContentView: View {
             StatsView(viewModel: viewModel)
                 .presentationDragIndicator(.visible)
         }
+        .onChange(of: widgetDeepLink) { _, newURL in
+            handleWidgetDeepLink(newURL)
+        }
+    }
+
+    private func handleWidgetDeepLink(_ url: URL?) {
+        guard let url = url else { return }
+
+        // Handle widget deep links: gardenofdays://void or gardenofdays://growth
+        if url.host == "void" {
+            viewModel.setViewMode(.void)
+        } else if url.host == "growth" {
+            viewModel.setViewMode(.growth)
+        }
+
+        // Clear the deep link after handling
+        widgetDeepLink = nil
     }
 
     private func configureViewModelIfNeeded() {
@@ -274,6 +292,6 @@ struct ContentView: View {
 // MARK: - Preview
 
 #Preview {
-    ContentView()
+    ContentView(widgetDeepLink: .constant(nil))
         .modelContainer(for: MemoryEntry.self, inMemory: true)
 }

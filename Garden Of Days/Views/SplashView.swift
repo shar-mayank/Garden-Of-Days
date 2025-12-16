@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct SplashView: View {
+    @Binding var widgetDeepLink: URL?
     @State private var isActive: Bool = false
     @State private var flowerScale: CGFloat = 0.5
     @State private var flowerOpacity: Double = 0
@@ -17,7 +18,7 @@ struct SplashView: View {
     var body: some View {
         ZStack {
             // ContentView is always present but hidden initially
-            ContentView()
+            ContentView(widgetDeepLink: $widgetDeepLink)
                 .opacity(isActive ? 1 : 0)
 
             // Splash overlay
@@ -99,5 +100,5 @@ struct FloralSplashPetal: Shape {
 // MARK: - Preview
 
 #Preview {
-    SplashView()
+    SplashView(widgetDeepLink: .constant(nil))
 }

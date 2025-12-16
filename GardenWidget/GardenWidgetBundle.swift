@@ -11,7 +11,9 @@ import SwiftUI
 @main
 struct GardenWidgetBundle: WidgetBundle {
     var body: some Widget {
-        GardenWidget()
+        VoidWidget()           // Dark grid widget (Large)
+        GrowthWidget()         // Light flower widget (Small/Medium)
+        MemoriesCountWidget()  // Memories count widget (Small)
         GardenWidgetControl()
         GardenWidgetLiveActivity()
     }

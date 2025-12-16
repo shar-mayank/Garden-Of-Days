@@ -53,6 +53,7 @@ final class GardenViewModel {
         }
     }
     var isDragRevealMode: Bool = false  // When true, dragging reveals flowers instead of opening journal
+    var revealedDayIds: Set<Int> = []   // Days temporarily revealed by drag gesture
     var gardenDays: [GardenDay] = []
     var selectedDay: GardenDay?
     var showEntrySheet: Bool = false
@@ -232,6 +233,9 @@ final class GardenViewModel {
                     gardenDays[index].memory = memory
                 }
             }
+
+            // Sync to widgets after loading
+            syncWidgetData()
         } catch {
             print("Error loading memories: \(error)")
         }
@@ -340,6 +344,7 @@ final class GardenViewModel {
             }
 
             try context.save()
+            syncWidgetData()
         } catch {
             print("Error saving memory: \(error)")
         }
@@ -358,9 +363,24 @@ final class GardenViewModel {
 
         do {
             try context.save()
+            syncWidgetData()
         } catch {
             print("Error deleting memory: \(error)")
         }
+    }
+
+    // MARK: - Widget Sync
+
+    /// Sync current garden data to widgets via App Groups
+    func syncWidgetData() {
+        let memoriesDays = gardenDays.filter { $0.hasMemory }.map { $0.id }
+        WidgetDataManager.shared.updateWidgetData(
+            memoriesCount: memoriesCount,
+            memoriesDays: memoriesDays,
+            daysLeftInYear: daysLeftInYear,
+            currentYear: selectedYear,
+            totalDaysInYear: totalDaysInYear
+        )
     }
 
     // MARK: - View Mode

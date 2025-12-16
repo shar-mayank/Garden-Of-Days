@@ -16,8 +16,7 @@ struct GardenGridView: View {
     @State private var cachedScreenWidth: CGFloat = 390 // Default, updated on appear
     @State private var cachedIsLandscape: Bool = false
 
-    // Slide reveal feature
-    @State private var revealedDayIds: Set<Int> = []
+    // Slide reveal feature - timer only (revealedDayIds moved to viewModel)
     @State private var revealResetTimer: Timer?
 
     var body: some View {
@@ -87,7 +86,7 @@ struct GardenGridView: View {
                     day: day,
                     color: viewModel.primaryColor,
                     config: config,
-                    isTemporarilyRevealed: revealedDayIds.contains(day.id)
+                    isTemporarilyRevealed: viewModel.revealedDayIds.contains(day.id)
                 )
                 .background(
                     GeometryReader { geo in
@@ -119,7 +118,7 @@ struct GardenGridView: View {
                             handleRevealDrag(at: location)
                         },
                         onDragEnded: {
-                            if !revealedDayIds.isEmpty {
+                            if !viewModel.revealedDayIds.isEmpty {
                                 startRevealResetTimer()
                             }
                         }
@@ -135,9 +134,9 @@ struct GardenGridView: View {
 
     private func handleRevealDrag(at location: CGPoint) {
         for (dayId, frame) in dayFrames {
-            if frame.contains(location) && !revealedDayIds.contains(dayId) {
-                _ = withAnimation(.spring(duration: 0.3)) {
-                    revealedDayIds.insert(dayId)
+            if frame.contains(location) && !viewModel.revealedDayIds.contains(dayId) {
+                withAnimation(.spring(duration: 0.3)) {
+                    viewModel.revealedDayIds.insert(dayId)
                 }
                 break
             }
@@ -146,10 +145,10 @@ struct GardenGridView: View {
 
     private func startRevealResetTimer() {
         revealResetTimer?.invalidate()
-        revealResetTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { _ in
+        revealResetTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { [self] _ in
             DispatchQueue.main.async {
                 withAnimation(.easeOut(duration: 0.5)) {
-                    revealedDayIds.removeAll()
+                    self.viewModel.revealedDayIds.removeAll()
                 }
             }
         }
@@ -432,6 +431,10 @@ struct GrowthFlowerView: View {
                 withAnimation(.easeOut(duration: 0.5).delay(Double(day.id) * 0.002)) {
                     scale = 1.0
                 }
+            }
+            // Restore revealed state when view appears (e.g., after switching modes)
+            if isTemporarilyRevealed {
+                revealScale = 1.0
             }
         }
         .onChange(of: isTemporarilyRevealed) { _, newValue in

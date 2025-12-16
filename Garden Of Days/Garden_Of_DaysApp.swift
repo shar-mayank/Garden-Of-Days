@@ -10,6 +10,8 @@ import SwiftData
 
 @main
 struct Garden_Of_DaysApp: App {
+    @State private var widgetDeepLink: URL?
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             MemoryEntry.self,
@@ -31,7 +33,10 @@ struct Garden_Of_DaysApp: App {
 
     var body: some Scene {
         WindowGroup {
-            SplashView()
+            SplashView(widgetDeepLink: $widgetDeepLink)
+                .onOpenURL { url in
+                    widgetDeepLink = url
+                }
         }
         .modelContainer(sharedModelContainer)
     }

@@ -75,15 +75,16 @@ extension Date {
     }
 
     static var daysLeftInYear: Int {
-        let today = Date()
         let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
         let year = calendar.component(.year, from: today)
         var components = DateComponents()
         components.year = year
         components.month = 12
         components.day = 31
         guard let lastDay = calendar.date(from: components) else { return 0 }
+        // Add 1 to include today in the count
         let days = calendar.dateComponents([.day], from: today, to: lastDay).day ?? 0
-        return max(0, days)
+        return max(0, days + 1)
     }
 }
