@@ -12,7 +12,7 @@ struct GardenGridView: View {
 
     // Grid configuration
     private let voidModeColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 20)
-    private let growthModeColumns = Array(repeating: GridItem(.flexible(), spacing: -8), count: 14)
+    private let growthModeColumns = Array(repeating: GridItem(.flexible(), spacing: -12), count: 12)  // Tighter grid for garden overlap
 
     var body: some View {
         GeometryReader { geometry in
@@ -51,7 +51,7 @@ struct GardenGridView: View {
     // MARK: - Growth Mode (Light, Organic Flowers)
 
     private var growthModeGrid: some View {
-        LazyVGrid(columns: growthModeColumns, spacing: -4) {
+        LazyVGrid(columns: growthModeColumns, spacing: -10) {  // Negative spacing for row overlap
             ForEach(viewModel.gardenDays) { day in
                 GrowthFlowerView(
                     day: day,
@@ -137,39 +137,49 @@ struct GrowthFlowerView: View {
     let day: GardenDay
     let color: Color
 
-    @State private var rotation: Double = 0
-    @State private var scale: CGFloat = 1.0
+    @State private var scale: CGFloat = 0.8
 
     private let doodleManager = DoodleManager.shared
 
-    // Random offsets for organic feel
+    // Flower size - larger for visual overlap
+    private let flowerSize: CGFloat = 50
+    private let cellSize: CGFloat = 28
+
+    // Small random offset for organic feel (but contained)
     private var randomOffset: CGSize {
         let seed = day.id
-        let x = CGFloat(sin(Double(seed) * 0.1)) * 4
-        let y = CGFloat(cos(Double(seed) * 0.15)) * 4
+        let x = CGFloat(sin(Double(seed) * 0.3)) * 3
+        let y = CGFloat(cos(Double(seed) * 0.4)) * 3
         return CGSize(width: x, height: y)
     }
 
+    // Slight random rotation for variety
     private var randomRotation: Double {
-        Double(day.id % 360) * 0.5 - 90
+        let variation = Double(day.id % 20) - 10  // -10 to +10 degrees
+        return variation
     }
 
     private var randomScale: CGFloat {
-        let base = 0.8
-        let variation = Double(day.id % 10) * 0.05
+        let base = 0.85
+        let variation = Double(day.id % 10) * 0.03
         return CGFloat(base + variation)
     }
 
     var body: some View {
-        Group {
+        ZStack {
+            // Invisible tap target - always tappable at cell size
+            Rectangle()
+                .fill(Color.clear)
+                .frame(width: cellSize, height: cellSize)
+
             if day.hasMemory, let memory = day.memory {
-                // Show flower doodle
+                // Show flower doodle - visual only, taps pass through
                 flowerDoodle(assetName: memory.doodleAssetName)
-                    .foregroundColor(color)
-                    .frame(width: 28, height: 28)
+                    .frame(width: flowerSize, height: flowerSize)
                     .scaleEffect(randomScale * scale)
-                    .rotationEffect(.degrees(randomRotation + rotation))
+                    .rotationEffect(.degrees(randomRotation))
                     .offset(randomOffset)
+                    .allowsHitTesting(false)  // Taps pass through to the cell below
             } else {
                 // Placeholder dot for empty days
                 Circle()
@@ -177,9 +187,9 @@ struct GrowthFlowerView: View {
                     .frame(width: 6, height: 6)
             }
         }
-        .frame(width: 28, height: 28)
+        .frame(width: cellSize, height: cellSize)
+        .contentShape(Rectangle())  // Tap area is exactly the cell
         .onAppear {
-            // Subtle animation on appear
             if day.hasMemory {
                 withAnimation(.easeOut(duration: 0.5).delay(Double(day.id) * 0.002)) {
                     scale = 1.0
@@ -190,11 +200,10 @@ struct GrowthFlowerView: View {
 
     @ViewBuilder
     private func flowerDoodle(assetName: String) -> some View {
-        // Use your PDF floral images from Assets.xcassets
+        // PNG floral images
         Image(assetName)
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(width: 24, height: 24)
     }
 }
 
