@@ -148,6 +148,33 @@ final class GardenViewModel {
         }
     }
 
+    /// Reload memories from persistent storage (call on orientation change, app resume, etc.)
+    func reloadMemories() {
+        guard let context = modelContext else { return }
+
+        // Clear existing memory references first
+        for index in gardenDays.indices {
+            gardenDays[index].memory = nil
+        }
+
+        // Reload from database
+        let descriptor = FetchDescriptor<MemoryEntry>()
+
+        do {
+            let memories = try context.fetch(descriptor)
+
+            // Map memories to garden days
+            for memory in memories {
+                let dayOfYear = memory.dayOfYear
+                if let index = gardenDays.firstIndex(where: { $0.id == dayOfYear }) {
+                    gardenDays[index].memory = memory
+                }
+            }
+        } catch {
+            print("Error reloading memories: \(error)")
+        }
+    }
+
     // MARK: - Actions
 
     func selectToday() {

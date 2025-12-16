@@ -10,8 +10,10 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel = GardenViewModel()
     @State private var showStats: Bool = false
+    @State private var hasConfigured: Bool = false
 
     var body: some View {
         ZStack {
@@ -42,7 +44,13 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            viewModel.configure(with: modelContext)
+            configureViewModelIfNeeded()
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            // Reload data when app becomes active (handles rotation, background/foreground)
+            if newPhase == .active {
+                viewModel.reloadMemories()
+            }
         }
         .sheet(isPresented: $viewModel.showEntrySheet) {
             if let selectedDay = viewModel.selectedDay {
@@ -54,6 +62,12 @@ struct ContentView: View {
             StatsView(viewModel: viewModel)
                 .presentationDragIndicator(.visible)
         }
+    }
+
+    private func configureViewModelIfNeeded() {
+        guard !hasConfigured else { return }
+        viewModel.configure(with: modelContext)
+        hasConfigured = true
     }
 
     // MARK: - Header View

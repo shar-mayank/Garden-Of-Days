@@ -15,60 +15,65 @@ struct SplashView: View {
     @State private var flowerRotation: Double = -90
 
     var body: some View {
-        if isActive {
+        ZStack {
+            // ContentView is always present but hidden initially
             ContentView()
-        } else {
-            ZStack {
-                Color.black
-                    .ignoresSafeArea()
+                .opacity(isActive ? 1 : 0)
 
-                VStack(spacing: 30) {
-                    // Animated flower
-                    ZStack {
-                        ForEach(0..<8, id: \.self) { index in
-                            FloralSplashPetal()
-                                .stroke(Color.white, lineWidth: 1.5)
-                                .frame(width: 20, height: 40)
-                                .offset(y: -30)
-                                .rotationEffect(.degrees(Double(index) * 45))
+            // Splash overlay
+            if !isActive {
+                ZStack {
+                    Color.black
+                        .ignoresSafeArea()
+
+                    VStack(spacing: 30) {
+                        // Animated flower
+                        ZStack {
+                            ForEach(0..<8, id: \.self) { index in
+                                FloralSplashPetal()
+                                    .stroke(Color.white, lineWidth: 1.5)
+                                    .frame(width: 20, height: 40)
+                                    .offset(y: -30)
+                                    .rotationEffect(.degrees(Double(index) * 45))
+                            }
+
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 12, height: 12)
                         }
+                        .scaleEffect(flowerScale)
+                        .rotationEffect(.degrees(flowerRotation))
+                        .opacity(flowerOpacity)
 
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 12, height: 12)
+                        // App name
+                        VStack(spacing: 8) {
+                            Text("garden of days")
+                                .font(.system(.title, design: .monospaced))
+                                .fontWeight(.light)
+                                .foregroundColor(.white)
+
+                            Text("\(Date().year)")
+                                .font(.system(.caption, design: .monospaced))
+                                .foregroundColor(.white.opacity(0.6))
+                        }
+                        .opacity(textOpacity)
                     }
-                    .scaleEffect(flowerScale)
-                    .rotationEffect(.degrees(flowerRotation))
-                    .opacity(flowerOpacity)
-
-                    // App name
-                    VStack(spacing: 8) {
-                        Text("garden of days")
-                            .font(.system(.title, design: .monospaced))
-                            .fontWeight(.light)
-                            .foregroundColor(.white)
-
-                        Text("\(Date().year)")
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.6))
+                }
+                .onAppear {
+                    withAnimation(.spring(duration: 0.8)) {
+                        flowerScale = 1.0
+                        flowerOpacity = 1.0
+                        flowerRotation = 0
                     }
-                    .opacity(textOpacity)
-                }
-            }
-            .onAppear {
-                withAnimation(.spring(duration: 0.8)) {
-                    flowerScale = 1.0
-                    flowerOpacity = 1.0
-                    flowerRotation = 0
-                }
 
-                withAnimation(.easeIn(duration: 0.5).delay(0.3)) {
-                    textOpacity = 1.0
-                }
+                    withAnimation(.easeIn(duration: 0.5).delay(0.3)) {
+                        textOpacity = 1.0
+                    }
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        isActive = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isActive = true
+                        }
                     }
                 }
             }
