@@ -25,13 +25,13 @@ struct ContentView: View {
 
                 // Main content with header and grid
                 VStack(spacing: 0) {
-                    // Header - fixed height
+                    // Header - fixed height (increased for logo)
                     headerView
-                        .frame(height: 140)
+                        .frame(height: 190)
 
                     // Grid - takes remaining space
                     GardenGridView(viewModel: viewModel)
-                        .frame(height: geometry.size.height - 140 - 80) // Fixed height: total - header - footer
+                        .frame(height: geometry.size.height - 190 - 80) // Fixed height: total - header - footer
                         .clipped()
                 }
 
@@ -101,7 +101,14 @@ struct ContentView: View {
     // MARK: - Header View
 
     private var headerView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
+            // App Logo
+            Image("AppLogo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 50, height: 50)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
             // Countdown text - tap for stats
             Button {
                 showStats = true
@@ -134,8 +141,8 @@ struct ContentView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.top, 60)
-        .padding(.bottom, 24)
+        .padding(.top, 50)
+        .padding(.bottom, 16)
     }
 
     // MARK: - Footer View
