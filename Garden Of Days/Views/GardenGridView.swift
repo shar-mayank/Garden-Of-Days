@@ -9,21 +9,22 @@ import SwiftUI
 
 struct GardenGridView: View {
     @Bindable var viewModel: GardenViewModel
-
-    // Grid configuration
-    private let voidModeColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 20)
-    private let growthModeColumns = Array(repeating: GridItem(.flexible(), spacing: -12), count: 12)  // Tighter grid for garden overlap
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
     var body: some View {
         GeometryReader { geometry in
+            let screenWidth = geometry.size.width
+            let isLandscape = geometry.size.width > geometry.size.height
+            let gridConfig = GridConfig(screenWidth: screenWidth, isLandscape: isLandscape, sizeClass: horizontalSizeClass)
+
             ScrollView {
                 if viewModel.viewMode == .void {
-                    voidModeGrid
-                        .padding(.horizontal, 12)
+                    voidModeGrid(config: gridConfig)
+                        .padding(.horizontal, gridConfig.horizontalPadding)
                         .padding(.vertical, 20)
                 } else {
-                    growthModeGrid
-                        .padding(.horizontal, 8)
+                    growthModeGrid(config: gridConfig)
+                        .padding(.horizontal, gridConfig.horizontalPadding)
                         .padding(.vertical, 16)
                 }
             }
@@ -33,12 +34,15 @@ struct GardenGridView: View {
 
     // MARK: - Void Mode (Dark, Minimalist Dots)
 
-    private var voidModeGrid: some View {
-        LazyVGrid(columns: voidModeColumns, spacing: 8) {
+    private func voidModeGrid(config: GridConfig) -> some View {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: config.voidSpacing), count: config.voidColumns)
+
+        return LazyVGrid(columns: columns, spacing: config.voidSpacing) {
             ForEach(viewModel.gardenDays) { day in
                 VoidDotView(
                     day: day,
-                    isToday: day.id == viewModel.todayDayOfYear
+                    isToday: day.id == viewModel.todayDayOfYear,
+                    config: config
                 )
                 .onTapGesture {
                     viewModel.selectDay(day)
@@ -50,12 +54,15 @@ struct GardenGridView: View {
 
     // MARK: - Growth Mode (Light, Organic Flowers)
 
-    private var growthModeGrid: some View {
-        LazyVGrid(columns: growthModeColumns, spacing: -10) {  // Negative spacing for row overlap
+    private func growthModeGrid(config: GridConfig) -> some View {
+        let columns = Array(repeating: GridItem(.fixed(config.cellSize), spacing: 0), count: config.growthColumns)
+
+        return LazyVGrid(columns: columns, spacing: 0) {
             ForEach(viewModel.gardenDays) { day in
                 GrowthFlowerView(
                     day: day,
-                    color: viewModel.primaryColor
+                    color: viewModel.primaryColor,
+                    config: config
                 )
                 .onTapGesture {
                     viewModel.selectDay(day)
@@ -66,16 +73,89 @@ struct GardenGridView: View {
     }
 }
 
+// MARK: - Dynamic Grid Configuration
+
+struct GridConfig {
+    let screenWidth: CGFloat
+    let isLandscape: Bool
+    let sizeClass: UserInterfaceSizeClass?
+
+    var isIPad: Bool {
+        sizeClass == .regular
+    }
+
+    // Scale factor based on device
+    var scaleFactor: CGFloat {
+        if isIPad {
+            return isLandscape ? 2.0 : 1.8
+        } else {
+            return isLandscape ? 1.3 : 1.0
+        }
+    }
+
+    // Growth mode (pink side)
+    var cellSize: CGFloat {
+        let base: CGFloat = 18
+        return base * scaleFactor
+    }
+
+    var flowerSize: CGFloat {
+        let base: CGFloat = 45
+        return base * scaleFactor
+    }
+
+    var dotSize: CGFloat {
+        let base: CGFloat = 4
+        return base * scaleFactor
+    }
+
+    var growthColumns: Int {
+        if isIPad {
+            return isLandscape ? 28 : 20
+        } else {
+            return isLandscape ? 28 : 18
+        }
+    }
+
+    // Void mode (dark side)
+    var voidColumns: Int {
+        if isIPad {
+            return isLandscape ? 32 : 24
+        } else {
+            return isLandscape ? 28 : 20
+        }
+    }
+
+    var voidSpacing: CGFloat {
+        isIPad ? 12 : 8
+    }
+
+    var voidDotSize: CGFloat {
+        let base: CGFloat = 8
+        return base * scaleFactor
+    }
+
+    var voidFilledDotSize: CGFloat {
+        let base: CGFloat = 10
+        return base * scaleFactor
+    }
+
+    var horizontalPadding: CGFloat {
+        isIPad ? 24 : 8
+    }
+}
+
 // MARK: - Void Mode Dot View
 
 struct VoidDotView: View {
     let day: GardenDay
     let isToday: Bool
+    let config: GridConfig
 
     @State private var isAnimating: Bool = false
 
-    private let dotSize: CGFloat = 8
-    private let filledDotSize: CGFloat = 10
+    private var dotSize: CGFloat { config.voidDotSize }
+    private var filledDotSize: CGFloat { config.voidFilledDotSize }
 
     /// Dot color based on day status
     private var dotColor: Color {
@@ -115,12 +195,12 @@ struct VoidDotView: View {
             // Today indicator ring
             if isToday {
                 Circle()
-                    .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
+                    .stroke(Color.white.opacity(0.6), lineWidth: 1.5 * config.scaleFactor)
                     .frame(width: dotSize + 8, height: dotSize + 8)
                     .scaleEffect(isAnimating ? 1.2 : 1.0)
             }
         }
-        .frame(width: 16, height: 16)
+        .frame(width: dotSize * 2, height: dotSize * 2)
         .onAppear {
             if isToday {
                 withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
@@ -136,20 +216,22 @@ struct VoidDotView: View {
 struct GrowthFlowerView: View {
     let day: GardenDay
     let color: Color
+    let config: GridConfig
 
     @State private var scale: CGFloat = 0.8
 
     private let doodleManager = DoodleManager.shared
 
-    // Flower size - larger for visual overlap
-    private let flowerSize: CGFloat = 50
-    private let cellSize: CGFloat = 28
+    private var flowerSize: CGFloat { config.flowerSize }
+    private var cellSize: CGFloat { config.cellSize }
+    private var dotSize: CGFloat { config.dotSize }
 
-    // Small random offset for organic feel (but contained)
+    // Small random offset for organic feel (scaled)
     private var randomOffset: CGSize {
         let seed = day.id
-        let x = CGFloat(sin(Double(seed) * 0.3)) * 3
-        let y = CGFloat(cos(Double(seed) * 0.4)) * 3
+        let offsetScale = config.scaleFactor * 3
+        let x = CGFloat(sin(Double(seed) * 0.3)) * offsetScale
+        let y = CGFloat(cos(Double(seed) * 0.4)) * offsetScale
         return CGSize(width: x, height: y)
     }
 
@@ -167,9 +249,8 @@ struct GrowthFlowerView: View {
 
     var body: some View {
         ZStack {
-            // Invisible tap target - always tappable at cell size
-            Rectangle()
-                .fill(Color.clear)
+            // Invisible tap target - always tappable
+            Color.clear
                 .frame(width: cellSize, height: cellSize)
 
             if day.hasMemory, let memory = day.memory {
@@ -181,10 +262,10 @@ struct GrowthFlowerView: View {
                     .offset(randomOffset)
                     .allowsHitTesting(false)  // Taps pass through to the cell below
             } else {
-                // Placeholder dot for empty days
+                // Placeholder dot for empty days (increased opacity to 0.45)
                 Circle()
-                    .fill(color.opacity(0.35))
-                    .frame(width: 6, height: 6)
+                    .fill(color.opacity(0.45))
+                    .frame(width: dotSize, height: dotSize)
             }
         }
         .frame(width: cellSize, height: cellSize)
@@ -247,4 +328,14 @@ struct ToastView: View {
 
     return GardenGridView(viewModel: viewModel)
         .background(Color(hex: "E5E5EA"))
+}
+
+#Preview("iPad Growth Mode") {
+    let viewModel = GardenViewModel()
+    viewModel.viewMode = .growth
+    viewModel.loadGardenDays()
+
+    return GardenGridView(viewModel: viewModel)
+        .background(Color(hex: "E5E5EA"))
+        .previewDevice(PreviewDevice(rawValue: "iPad Pro (12.9-inch)"))
 }
