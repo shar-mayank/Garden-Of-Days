@@ -15,8 +15,7 @@ struct EntryView: View {
     @State private var memoryText: String = ""
     @State private var isTyping: Bool = false
     @FocusState private var isTextFieldFocused: Bool
-
-    private let maxCharacters = 365
+    @State private var showShareSheet: Bool = false
 
     var body: some View {
         ZStack {
@@ -54,6 +53,16 @@ struct EntryView: View {
             // Auto-save on dismiss
             saveMemoryIfNeeded()
         }
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(activityItems: [shareContent])
+        }
+    }
+
+    // MARK: - Share Content
+
+    private var shareContent: String {
+        let dateString = day.displayDate
+        return "\(dateString)\n\n\(memoryText)"
     }
 
     // MARK: - Header
@@ -73,10 +82,16 @@ struct EntryView: View {
 
             Spacer()
 
-            // Character counter
-            Text("\(memoryText.count)/\(maxCharacters)")
-                .font(.system(.caption, design: .monospaced))
-                .foregroundColor(characterCountColor)
+            // Share button
+            Button {
+                showShareSheet = true
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 16))
+                    .foregroundColor(memoryText.isEmpty ? Color.gray : Color(hex: "f670b2"))
+            }
+            .disabled(memoryText.isEmpty)
+            .padding(.trailing, 12)
 
             // Done button
             Button {
@@ -122,11 +137,6 @@ struct EntryView: View {
                 .padding(.vertical, 16)
                 .focused($isTextFieldFocused)
                 .onChange(of: memoryText) { oldValue, newValue in
-                    // Limit character count
-                    if newValue.count > maxCharacters {
-                        memoryText = String(newValue.prefix(maxCharacters))
-                    }
-
                     // Typing animation
                     withAnimation(.easeInOut(duration: 0.1)) {
                         isTyping = true
@@ -144,18 +154,6 @@ struct EntryView: View {
         .background(Color.white)
     }
 
-    // MARK: - Helper Properties
-
-    private var characterCountColor: Color {
-        let percentage = Double(memoryText.count) / Double(maxCharacters)
-        if percentage >= 0.95 {
-            return Color.red
-        } else if percentage >= 0.8 {
-            return Color.orange
-        }
-        return Color.gray
-    }
-
     // MARK: - Actions
 
     private func saveMemoryIfNeeded() {
@@ -171,6 +169,22 @@ struct EntryView: View {
             viewModel.saveMemory(content: trimmedText, for: day)
         }
     }
+}
+
+// MARK: - ShareSheet
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: activityItems,
+            applicationActivities: nil
+        )
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Preview
