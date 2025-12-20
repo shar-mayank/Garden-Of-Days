@@ -31,19 +31,29 @@ class WidgetSharedData {
     }
 
     func getMemoriesCount() -> Int {
-        sharedDefaults?.integer(forKey: Keys.memoriesCount) ?? 0
+        guard let defaults = sharedDefaults,
+              defaults.object(forKey: Keys.memoriesCount) != nil else {
+            return 0
+        }
+        return defaults.integer(forKey: Keys.memoriesCount)
     }
 
     func getDaysLeftInYear() -> Int {
-        // Calculate if not set
-        if let days = sharedDefaults?.integer(forKey: Keys.daysLeftInYear), days > 0 {
-            return days
+        guard let defaults = sharedDefaults,
+              defaults.object(forKey: Keys.daysLeftInYear) != nil else {
+            return calculateDaysLeftInYear()
         }
-        return calculateDaysLeftInYear()
+        let days = defaults.integer(forKey: Keys.daysLeftInYear)
+        return days > 0 ? days : calculateDaysLeftInYear()
     }
 
     func getCurrentYear() -> Int {
-        sharedDefaults?.integer(forKey: Keys.currentYear) ?? Calendar.current.component(.year, from: Date())
+        guard let defaults = sharedDefaults,
+              defaults.object(forKey: Keys.currentYear) != nil else {
+            return Calendar.current.component(.year, from: Date())
+        }
+        let year = defaults.integer(forKey: Keys.currentYear)
+        return year > 0 ? year : Calendar.current.component(.year, from: Date())
     }
 
     func getMemoriesDays() -> Set<Int> {
@@ -51,7 +61,11 @@ class WidgetSharedData {
     }
 
     func getTotalDaysInYear() -> Int {
-        let stored = sharedDefaults?.integer(forKey: Keys.totalDaysInYear) ?? 0
+        guard let defaults = sharedDefaults,
+              defaults.object(forKey: Keys.totalDaysInYear) != nil else {
+            return 365
+        }
+        let stored = defaults.integer(forKey: Keys.totalDaysInYear)
         return stored > 0 ? stored : 365
     }
 
@@ -276,7 +290,7 @@ struct MemoriesCountWidgetView: View {
                 .font(.system(.caption, design: .monospaced))
                 .foregroundColor(.white.opacity(0.7))
 
-            Text("in \(entry.currentYear)")
+            Text("in \(String(entry.currentYear))")
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundColor(.white.opacity(0.5))
         }
