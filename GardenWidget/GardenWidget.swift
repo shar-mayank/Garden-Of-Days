@@ -110,31 +110,70 @@ struct GardenProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (GardenEntry) -> Void) {
-        let entry = createEntry()
+        let entry = createEntry(for: Date())
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<GardenEntry>) -> Void) {
-        let entry = createEntry()
-
-        // Update at midnight for days left counter
         let calendar = Calendar.current
-        let tomorrow = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: Date())!)
+        let now = Date()
 
-        let timeline = Timeline(entries: [entry], policy: .after(tomorrow))
+        // Create entries for today and the next few days to ensure updates
+        var entries: [GardenEntry] = []
+
+        // Entry for right now
+        entries.append(createEntry(for: now))
+
+        // Create entries for the next 5 days at midnight
+        // This ensures the widget updates even if the system doesn't wake it exactly at midnight
+        for dayOffset in 1...5 {
+            if let futureDate = calendar.date(byAdding: .day, value: dayOffset, to: now) {
+                let startOfDay = calendar.startOfDay(for: futureDate)
+                entries.append(createEntry(for: startOfDay))
+            }
+        }
+
+        // Request refresh after the last entry's date, or use .atEnd for automatic refresh
+        let timeline = Timeline(entries: entries, policy: .atEnd)
         completion(timeline)
     }
 
-    private func createEntry() -> GardenEntry {
+    private func createEntry(for date: Date) -> GardenEntry {
         let data = WidgetSharedData.shared
+        let calendar = Calendar.current
+
+        // Always calculate days left dynamically based on the entry date
+        let daysLeft = calculateDaysLeft(from: date)
+        let year = calendar.component(.year, from: date)
+        let totalDays = calendar.range(of: .day, in: .year, for: date)?.count ?? 365
+
         return GardenEntry(
-            date: Date(),
-            daysLeft: data.getDaysLeftInYear(),
+            date: date,
+            daysLeft: daysLeft,
             memoriesCount: data.getMemoriesCount(),
             memoriesDays: data.getMemoriesDays(),
-            totalDaysInYear: data.getTotalDaysInYear(),
-            currentYear: data.getCurrentYear()
+            totalDaysInYear: totalDays,
+            currentYear: year
         )
+    }
+
+    private func calculateDaysLeft(from date: Date) -> Int {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        let year = calendar.component(.year, from: startOfDay)
+
+        var endOfYearComponents = DateComponents()
+        endOfYearComponents.year = year
+        endOfYearComponents.month = 12
+        endOfYearComponents.day = 31
+
+        guard let lastDayOfYear = calendar.date(from: endOfYearComponents) else {
+            return 0
+        }
+
+        // Calculate days remaining including today
+        let days = calendar.dateComponents([.day], from: startOfDay, to: lastDayOfYear).day ?? 0
+        return max(0, days + 1)
     }
 }
 

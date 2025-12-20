@@ -7,10 +7,12 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 @main
 struct Garden_Of_DaysApp: App {
     @State private var widgetDeepLink: URL?
+    @Environment(\.scenePhase) private var scenePhase
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -39,5 +41,11 @@ struct Garden_Of_DaysApp: App {
                 }
         }
         .modelContainer(sharedModelContainer)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .active {
+                // Refresh widgets when app becomes active
+                WidgetCenter.shared.reloadAllTimelines()
+            }
+        }
     }
 }
