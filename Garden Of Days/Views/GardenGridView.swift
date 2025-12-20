@@ -8,6 +8,25 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - Seeded Random Generator for consistent randomness
+struct SeededRandomGenerator: RandomNumberGenerator {
+    private var state: UInt64
+
+    init(seed: UInt64) {
+        // Ensure non-zero seed for xorshift to work properly
+        // Mix the seed with a large prime to spread values
+        self.state = seed == 0 ? 0x853c49e6748fea9b : (seed &* 0x2545F4914F6CDD1D) ^ 0x853c49e6748fea9b
+    }
+
+    mutating func next() -> UInt64 {
+        // xorshift64* algorithm for better distribution
+        state ^= state >> 12
+        state ^= state << 25
+        state ^= state >> 27
+        return state &* 0x2545F4914F6CDD1D
+    }
+}
+
 struct GardenGridView: View {
     @Bindable var viewModel: GardenViewModel
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
@@ -364,10 +383,14 @@ struct GrowthFlowerView: View {
     private var cellSize: CGFloat { config.cellSize }
     private var dotSize: CGFloat { config.dotSize }
 
-    // Consistent random doodle for this day
+    // Random doodle for this day using seeded randomness
+    // This ensures the same day gets the same flower within a session, but appears random
     private var temporaryDoodleName: String {
-        let doodles = ["floral_1", "floral_2", "floral_3", "floral_4", "floral_5", "floral_6", "floral_7", "floral_8", "floral_9"]
-        return doodles[day.id % doodles.count]
+        let doodles = doodleManager.getAllDoodles()
+        // Use a seeded random generator based on day.id for consistent but random-looking results
+        var generator = SeededRandomGenerator(seed: UInt64(day.id * 31 + 17))
+        let index = Int.random(in: 0..<doodles.count, using: &generator)
+        return doodles[index]
     }
 
     // Small random offset for organic feel (scaled)

@@ -13,10 +13,13 @@ final class DoodleManager {
     static let shared = DoodleManager()
 
     // MARK: - Image Assets from Assets.xcassets
-    // Your 9 floral SVG images
+    // 25 floral PNG images with transparent backgrounds
     private let imageAssets: [String] = [
         "floral_1", "floral_2", "floral_3", "floral_4", "floral_5",
-        "floral_6", "floral_7", "floral_8", "floral_9"
+        "floral_6", "floral_7", "floral_8", "floral_9", "floral_10",
+        "floral_11", "floral_12", "floral_13", "floral_14", "floral_15",
+        "floral_16", "floral_17", "floral_18", "floral_19", "floral_20",
+        "floral_21", "floral_22", "floral_23", "floral_24", "floral_25"
     ]
 
     private init() {}
