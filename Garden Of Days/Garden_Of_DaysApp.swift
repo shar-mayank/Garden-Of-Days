@@ -8,11 +8,17 @@
 import SwiftUI
 import SwiftData
 import WidgetKit
+import UserNotifications
 
 @main
 struct Garden_Of_DaysApp: App {
     @State private var widgetDeepLink: URL?
     @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        // Setup notifications when app launches
+        NotificationManager.shared.setupNotifications()
+    }
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
